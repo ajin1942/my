@@ -251,7 +251,7 @@ class Processor():
             self.print_log('Load weights from {}.'.format(self.arg.weights))
             if '.pkl' in self.arg.weights:
                 with open(self.arg.weights, 'r') as f:
-                    weights = pickle.load(f)
+                    weights = pickle.load(f) #从file中读取一个字符串，并将它重构为原来的python对象。
             else:
                 weights = torch.load(self.arg.weights)
 

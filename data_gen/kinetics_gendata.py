@@ -109,9 +109,9 @@ class Feeder_kinetics(Dataset):
                     break
                 pose = skeleton_info['pose']
                 score = skeleton_info['score']
-                data_numpy[0, frame_index, :, m] = pose[0::2]
-                data_numpy[1, frame_index, :, m] = pose[1::2]
-                data_numpy[2, frame_index, :, m] = score
+                data_numpy[0, frame_index, :, m] = pose[0::2]    #从0开始间隔取数，横坐标
+                data_numpy[1, frame_index, :, m] = pose[1::2]    #从1开始间隔取数，纵坐标
+                data_numpy[2, frame_index, :, m] = score         #得分
 
         # centralization
         data_numpy[0:2] = data_numpy[0:2] - 0.5
@@ -123,14 +123,14 @@ class Feeder_kinetics(Dataset):
         label = video_info['label_index']
         assert (self.label[index] == label)
 
-        # sort by score
-        sort_index = (-data_numpy[2, :, :, :].sum(axis=1)).argsort(axis=1)  #分数按第一维相加，排序，返回索引值
+        # sort by score   按分数排序选取前num_person_out的data
+        sort_index = (-data_numpy[2, :, :, :].sum(axis=1)).argsort(axis=1)  #分数相加，排序，返回索引值
         for t, s in enumerate(sort_index):
             data_numpy[:, t, :, :] = data_numpy[:, t, :, s].transpose((1, 2,
                                                                        0))
         data_numpy = data_numpy[:, :, :, 0:self.num_person_out]
 
-        return data_numpy, label
+        return data_numpy, label             #data_numpy.shape = (3,300,18,2)
 
 
 def gendata(data_path, label_path,
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         '--out_folder', default='E:/project/datasets/kinetics-skeleton/kinetics')
     arg = parser.parse_args()
 
-    part = ['train', 'val']
+    part = ['val', 'train']
     for p in part:
         print('kinetics ', p)
         if not os.path.exists(arg.out_folder):
