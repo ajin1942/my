@@ -21,7 +21,7 @@ def normalize_digraph(A):  # 除以每列的和
 
 def get_spatial_graph(num_node, self_link, inward, outward):
     I = edge2mat(self_link, num_node)
-    In = normalize_digraph(edge2mat(inward, num_node))
-    Out = normalize_digraph(edge2mat(outward, num_node))
-    A = np.stack((I, In, Out))
+    In = normalize_digraph(edge2mat(inward, num_node))       #入AD
+    Out = normalize_digraph(edge2mat(outward, num_node))     #出AD
+    A = np.stack((I, In, Out))       #堆叠
     return A

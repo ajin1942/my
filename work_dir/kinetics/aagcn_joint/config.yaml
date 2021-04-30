@@ -1,0 +1,51 @@
+base_lr: 0.1
+batch_size: 4
+config: ./config/kinetics-skeleton/train_joint.yaml
+device:
+- 0
+eval_interval: 5
+feeder: feeders.feeder.Feeder
+ignore_weights: []
+log_interval: 100
+model: model.aagcn.Model
+model_args:
+  graph: graph.kinetics.Graph
+  graph_args:
+    labeling_mode: spatial
+  num_class: 400
+  num_person: 2
+  num_point: 18
+model_saved_name: ./runs/ki_aagcn_joint
+nesterov: true
+num_epoch: 30
+num_worker: 0
+only_train_epoch: 0
+only_train_part: false
+optimizer: SGD
+phase: train
+print_log: true
+save_interval: 2
+save_score: false
+seed: 1
+show_topk:
+- 1
+- 5
+start_epoch: 0
+step:
+- 45
+- 55
+test_batch_size: 4
+test_feeder_args:
+  data_path: E:/project/datasets/kinetics-skeleton/kinetics/val_data_joint.npy
+  label_path: E:/project/datasets/kinetics-skeleton/kinetics/val_label.pkl
+train_feeder_args:
+  data_path: E:/project/datasets/kinetics-skeleton/kinetics/train_data_joint.npy
+  debug: false
+  label_path: E:/project/datasets/kinetics-skeleton/kinetics/train_label.pkl
+  random_choose: true
+  random_move: true
+  window_size: 150
+warm_up_epoch: 0
+weight_decay: 0.0001
+weights: null
+work_dir: ./work_dir/kinetics/aagcn_joint

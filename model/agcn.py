@@ -36,7 +36,7 @@ def bn_init(bn, scale):
 class unit_tcn(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=9, stride=1):
         super(unit_tcn, self).__init__()
-        pad = int((kernel_size - 1) / 2)
+        pad = int((kernel_size - 1) / 2)   #与原图大小一致
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=(kernel_size, 1), padding=(pad, 0),
                               stride=(stride, 1))
 
@@ -55,14 +55,14 @@ class unit_gcn(nn.Module):
         super(unit_gcn, self).__init__()
         inter_channels = out_channels // coff_embedding
         self.inter_c = inter_channels
-        self.PA = nn.Parameter(torch.from_numpy(A.astype(np.float32)))
-        nn.init.constant_(self.PA, 1e-6)
-        self.A = Variable(torch.from_numpy(A.astype(np.float32)), requires_grad=False)
+        self.PA = nn.Parameter(torch.from_numpy(A.astype(np.float32)))  #nn.Parameter将一个固定不可训练的tensor转换成可以训练的类型parameter，并将这个parameter绑定到这个module里面
+                                                                        #torch.from_numpy  将数组转换为张量
+        nn.init.constant_(self.PA, 1e-6)        # avoid empty rows
+        self.A = Variable(torch.from_numpy(A.astype(np.float32)), requires_grad=False)   #requires_grad是参不参与误差反向传播, 要不要计算梯度
         self.num_subset = num_subset
-
         self.conv_a = nn.ModuleList()
         self.conv_b = nn.ModuleList()
-        self.conv_d = nn.ModuleList()
+        self.conv_d = nn.ModuleList()              #构建3个卷积块
         for i in range(self.num_subset):
             self.conv_a.append(nn.Conv2d(in_channels, inter_channels, 1))
             self.conv_b.append(nn.Conv2d(in_channels, inter_channels, 1))

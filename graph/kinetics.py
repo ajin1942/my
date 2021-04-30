@@ -55,5 +55,5 @@ class Graph:
 
 
 if __name__ == '__main__':
-    A = Graph('spatial').get_adjacency_matrix()
+    A = Graph('spatial').get_adjacency_matrix()   #(3,18,18)
     print('')

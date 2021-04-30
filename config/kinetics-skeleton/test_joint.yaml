@@ -6,7 +6,7 @@ test_feeder_args:
   debug: False
 
 # model
-model: model.agcn.Model
+model: model.aagcn.Model
 model_args:
   num_class: 400
   num_person: 2
@@ -20,9 +20,9 @@ model_args:
 phase: test
 device: 0
 test_batch_size: 64
-weights: ./pre_train/ki_agcn.pt
+weights: ./pre_train/ki_aagcn.pt
 
 
-work_dir: ./work_dir/kinetics/agcn_joint_test
-model_saved_name: ./runs/ki_agcn_joint_test
+work_dir: ./work_dir/kinetics/aagcn_joint_test
+model_saved_name: ./runs/ki_aagcn_joint_test
 save_score: True

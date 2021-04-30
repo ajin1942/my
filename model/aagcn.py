@@ -24,7 +24,7 @@ def conv_branch_init(conv, branches):
 
 
 def conv_init(conv):
-    nn.init.kaiming_normal_(conv.weight, mode='fan_out')
+    nn.init.kaiming_normal_(conv.weight, mode='fan_out') # 'fan_out' preserves the magnitudes in the backwards pass
     nn.init.constant_(conv.bias, 0)
 
 
@@ -33,7 +33,7 @@ def bn_init(bn, scale):
     nn.init.constant_(bn.bias, 0)
 
 
-class unit_tcn(nn.Module):
+class unit_tcn(nn.Module):  #tcn(Kt × 1 convolution on the C ×T ×N feature maps) + bn
     def __init__(self, in_channels, out_channels, kernel_size=9, stride=1):
         super(unit_tcn, self).__init__()
         pad = int((kernel_size - 1) / 2)
@@ -65,7 +65,7 @@ class unit_gcn(nn.Module):
             self.conv_d.append(nn.Conv2d(in_channels, out_channels, 1))
 
         if adaptive:
-            self.PA = nn.Parameter(torch.from_numpy(A.astype(np.float32)))
+            self.PA = nn.Parameter(torch.from_numpy(A.astype(np.float32)))        #复制A
             self.alpha = nn.Parameter(torch.zeros(1))
             # self.beta = nn.Parameter(torch.ones(1))
             # nn.init.constant_(self.PA, 1e-6)
@@ -95,14 +95,14 @@ class unit_gcn(nn.Module):
             ker_jpt = num_jpts - 1 if not num_jpts % 2 else num_jpts
             pad = (ker_jpt - 1) // 2
             self.conv_sa = nn.Conv1d(out_channels, 1, ker_jpt, padding=pad)
-            nn.init.xavier_normal_(self.conv_sa.weight)
+            nn.init.xavier_normal_(self.conv_sa.weight) #torch.nn.init.xavier_normal_(tensor, gain=1) 正态分布~N(0, std )
             nn.init.constant_(self.conv_sa.bias, 0)
 
             # channel attention
             rr = 2
             self.fc1c = nn.Linear(out_channels, out_channels // rr)
             self.fc2c = nn.Linear(out_channels // rr, out_channels)
-            nn.init.kaiming_normal_(self.fc1c.weight)
+            nn.init.kaiming_normal_(self.fc1c.weight)              ##torch.nn.init.kaiming_normal_
             nn.init.constant_(self.fc1c.bias, 0)
             nn.init.constant_(self.fc2c.weight, 0)
             nn.init.constant_(self.fc2c.bias, 0)
@@ -111,7 +111,7 @@ class unit_gcn(nn.Module):
             # bn_init(self.bn, 1)
         self.attention = attention
 
-        if in_channels != out_channels:
+        if in_channels != out_channels:             #The residual box (dotted line) is only needed when Cin is not the same as Cout.
             self.down = nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, 1),
                 nn.BatchNorm2d(out_channels)
@@ -123,7 +123,7 @@ class unit_gcn(nn.Module):
         self.soft = nn.Softmax(-2)
         self.tan = nn.Tanh()
         self.sigmoid = nn.Sigmoid()
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU(inplace=True)  #inplace=True，从上层网络中传递下来的tensor直接进行修改，这样能够节省运算内存，不用多存储其他变量。
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -142,12 +142,12 @@ class unit_gcn(nn.Module):
             A = self.PA
             # A = A + self.PA
             for i in range(self.num_subset):
-                A1 = self.conv_a[i](x).permute(0, 3, 1, 2).contiguous().view(N, V, self.inter_c * T)
-                A2 = self.conv_b[i](x).view(N, self.inter_c * T, V)
-                A1 = self.tan(torch.matmul(A1, A2) / A1.size(-1))  # N V V
-                A1 = A[i] + A1 * self.alpha
-                A2 = x.view(N, C * T, V)
-                z = self.conv_d[i](torch.matmul(A2, A1).view(N, C, T, V))
+                A1 = self.conv_a[i](x).permute(0, 3, 1, 2).contiguous().view(N, V, self.inter_c * T)  #N*V*CT（论文中的N*CT）
+                A2 = self.conv_b[i](x).view(N, self.inter_c * T, V)   #N*CT*V（论文中的CT*N）
+                A1 = self.tan(torch.matmul(A1, A2) / A1.size(-1))  # N V V     （论文中的N*N）高维矩阵 乘  Ck
+                A1 = A[i] + A1 * self.alpha   #(论文中N*N) -> A+B+C
+                A2 = x.view(N, C * T, V)      #论文中的CT*N（左）
+                z = self.conv_d[i](torch.matmul(A2, A1).view(N, C, T, V))    #N*C*T*V   (x.size，论文中C*T*N，每一个num_subset的输出)
                 y = z + y if y is not None else z
         else:
             A = self.A.cuda(x.get_device()) * self.mask
@@ -163,8 +163,8 @@ class unit_gcn(nn.Module):
 
         if self.attention:
             # spatial attention
-            se = y.mean(-2)  # N C V
-            se1 = self.sigmoid(self.conv_sa(se))
+            se = y.mean(-2)  # N C V     # N C V，归一化
+            se1 = self.sigmoid(self.conv_sa(se))   #计算注意力机制
             y = y * se1.unsqueeze(-2) + y
             # a1 = se1.unsqueeze(-2)
 
@@ -285,7 +285,7 @@ class TCN_GCN_unit(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, num_class=60, num_point=25, num_person=2, graph=None, graph_args=dict(), in_channels=3,
+    def __init__(self, num_class=60, num_point=18, num_person=2, graph=None, graph_args=dict(), in_channels=3,
                  drop_out=0, adaptive=True, attention=True):
         super(Model, self).__init__()
 
@@ -322,7 +322,7 @@ class Model(nn.Module):
     def forward(self, x):
         N, C, T, V, M = x.size()
 
-        x = x.permute(0, 4, 3, 1, 2).contiguous().view(N, M * V * C, T)
+        x = x.permute(0, 4, 3, 1, 2).contiguous().view(N, M * V * C, T)  #permute()交换顺序#view顺序取数组重新组成目标形状，相当于reshape()
         x = self.data_bn(x)
         x = x.view(N, M, V, C, T).permute(0, 1, 3, 4, 2).contiguous().view(N * M, C, T, V)
 
